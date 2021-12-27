@@ -8,6 +8,3 @@ coverage/
 package-lock.json
 .aws-sam/
 packaged.y?ml
-venv/
-*/*/__pycache__/
-*/*/*/__pycache__/

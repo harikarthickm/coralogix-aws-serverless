@@ -155,4 +155,3 @@ class Tester(interfaces.TesterInterface):
                 result.append(self._append_redshift_test_result(redshift, test_name, "no_issue_found"))
         return result
 
-
