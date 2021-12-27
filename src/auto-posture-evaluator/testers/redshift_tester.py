@@ -11,6 +11,7 @@ def _return_default_custom_master_username_on_redshift_engines():
     return 'awsuser'
 
 
+
 class Tester(interfaces.TesterInterface):
     def __init__(self):
         self.aws_redshift_client = boto3.client('redshift')
