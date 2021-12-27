@@ -33,7 +33,8 @@ class Tester(interfaces.TesterInterface):
                self.detect_redshift_cluster_not_using_custom_master_username() + \
                self.detect_redshift_cluster_using_logging() + \
                self.detect_redshift_cluster_allow_version_upgrade() + \
-               self.detect_redshift_cluster_requires_ssl()
+               self.detect_redshift_cluster_requires_ssl() + \
+               self.detect_redshift_cluster_not_using_ec2_classic()
 
     def _append_redshift_test_result(self, redshift, test_name, issue_status):
         return {
@@ -144,4 +145,13 @@ class Tester(interfaces.TesterInterface):
                 result.append(self._append_redshift_test_result(redshift, test_name, "issue_found"))
         return result
 
+    def detect_redshift_cluster_not_using_ec2_classic(self):
+        test_name = "redshift_cluster_not_using_ec2_classic"
+        result = []
+        for redshift in self.redshift_clusters['Clusters']:
+            if not ('VpcId' in redshift and redshift['VpcId']):
+                result.append(self._append_redshift_test_result(redshift, test_name, "issue_found"))
+            else:
+                result.append(self._append_redshift_test_result(redshift, test_name, "no_issue_found"))
+        return result
 
