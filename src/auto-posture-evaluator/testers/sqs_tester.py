@@ -40,10 +40,12 @@ class Tester(interfaces.TesterInterface):
     def _return_all_the_sqs(self):
         response = self.aws_sqs_client.list_queues(MaxResults=100)
         sqs_urls = []
+        if 'QueueUrls' not in response:
+            return []
         sqs_urls.extend(response['QueueUrls'])
         # The API returns max of 100 topic arns in one call \
         # and need to paginate it using the next token sent.
-        while response['NextToken']:
+        while 'NextToken' in response and response['NextToken']:
             response = self.aws_sqs_client.list_queues(NextToken=response['NextToken'])
             sqs_urls.extend(response['QueueUrls'])
         return sqs_urls
@@ -52,10 +54,12 @@ class Tester(interfaces.TesterInterface):
         try:
             response = self.aws_sqs_client.client.list_dead_letter_source_queues(QueueUrl=queue_url, MaxResults=100)
             sqs_dead_letter_urls = []
+            if 'queueUrls' not in response:
+                return []
             sqs_dead_letter_urls.extend(response['queueUrls'])
             # The API returns max of 100 topic arns in one call \
             # and need to paginate it using the next token sent.
-            while response['NextToken']:
+            while 'NextToken' in response and response['NextToken']:
                 response = self.aws_sqs_client.list_queues(NextToken=response['NextToken'])
                 sqs_dead_letter_urls.extend(response['QueueUrls'])
             return sqs_dead_letter_urls
@@ -66,11 +70,14 @@ class Tester(interfaces.TesterInterface):
         result = []
         get_queue_attributes_result = self.aws_sqs_client.get_queue_attributes(
             QueueUrl=queue_url,
-            AttributeNames=['SqsManagedSseEnabled'])
-        if 'Attributes' in get_queue_attributes_result and 'SqsManagedSseEnabled' in \
-                get_queue_attributes_result['Attributes'] and get_queue_attributes_result['Attributes'][
-            'SqsManagedSseEnabled'].upper() in [
-            'SSE-SQS', 'SSE-KMS']:
+            AttributeNames=['SqsManagedSseEnabled', 'KmsMasterKeyId'])
+        if 'Attributes' in get_queue_attributes_result and ('SqsManagedSseEnabled' in \
+                                                            get_queue_attributes_result['Attributes'] and
+                                                            get_queue_attributes_result['Attributes'][
+                                                                'SqsManagedSseEnabled'] == 'true') or (
+                'KmsMasterKeyId' in get_queue_attributes_result['Attributes'] and
+                get_queue_attributes_result['Attributes'][
+                    'KmsMasterKeyId']):
             result.append(self._append_sqs_test_result(queue_url, test_name, "no_issue_found"))
         else:
             result.append(self._append_sqs_test_result(queue_url, test_name, "issue_found"))
