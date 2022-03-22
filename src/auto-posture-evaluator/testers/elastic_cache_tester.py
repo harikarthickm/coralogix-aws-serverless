@@ -30,7 +30,9 @@ class Tester(interfaces.TesterInterface):
     def run_tests(self) -> list:
         return self.detect_elasticache_cluster_not_using_default_port() + \
                self.detect_elasticache_cluster_using_vpc() + \
-               self.detect_elasticache_cluster_using_latest_engine_version()
+               self.detect_elasticache_cluster_using_latest_engine_version() + \
+               self.detect_elastiache_redis_in_transit_encryption_disabled() + \
+               self.detect_elasticache_redis_at_rest_encryption_disabled()
 
     def _append_elasticache_test_result(self, elasticache, test_name, issue_status):
         return {
@@ -85,11 +87,37 @@ class Tester(interfaces.TesterInterface):
         result = []
         for elasticache in self.elasticache_clusters['CacheClusters']:
             if self._return_latest_version_for_given_engine(elasticache['Engine'])[
-                        'CacheEngineVersionDescription'].split(
-                        ' ')[-1] != elasticache[
-                        'EngineVersion'] and self._return_latest_version_for_given_engine(elasticache['Engine'])[
-                        'EngineVersion'] != elasticache[
-                        'EngineVersion']:
+                'CacheEngineVersionDescription'].split(
+                ' ')[-1] != elasticache[
+                'EngineVersion'] and self._return_latest_version_for_given_engine(elasticache['Engine'])[
+                'EngineVersion'] != elasticache[
+                'EngineVersion']:
+                result.append(self._append_elasticache_test_result(elasticache, test_name, "issue_found"))
+            else:
+                result.append(self._append_elasticache_test_result(elasticache, test_name, "no_issue_found"))
+        return result
+
+    def detect_elastiache_redis_in_transit_encryption_disabled(self):
+        test_name = 'elastiache_redis_in_transit_encryption_disabled'
+        result = []
+        for elasticache in self.elasticache_clusters['CacheClusters']:
+            issue_found = False
+            if elasticache['Engine'] == 'redis' and not elasticache['TransitEncryptionEnabled']:
+                issue_found = True
+            if issue_found:
+                result.append(self._append_elasticache_test_result(elasticache, test_name, "issue_found"))
+            else:
+                result.append(self._append_elasticache_test_result(elasticache, test_name, "no_issue_found"))
+        return result
+
+    def detect_elasticache_redis_at_rest_encryption_disabled(self):
+        test_name = 'elasticache_redis_at_rest_encryption_disabled'
+        result = []
+        for elasticache in self.elasticache_clusters['CacheClusters']:
+            issue_found = False
+            if elasticache['Engine'] == 'redis' and not elasticache['AtRestEncryptionEnabled']:
+                issue_found = True
+            if issue_found:
                 result.append(self._append_elasticache_test_result(elasticache, test_name, "issue_found"))
             else:
                 result.append(self._append_elasticache_test_result(elasticache, test_name, "no_issue_found"))
