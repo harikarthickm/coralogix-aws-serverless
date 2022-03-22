@@ -28,7 +28,10 @@ class Tester(interfaces.TesterInterface):
                self.detect_elastic_search_cluster_encryption_enabled() + \
                self.detect_elastic_search_cluster_using_kms_cmk() + \
                self.detect_elastic_search_cluster_using_latest_engine_version() + \
-               self.detect_elastic_search_domain_not_publicly_accessible()
+               self.detect_elastic_search_domain_not_publicly_accessible() + \
+               self.detect_elastic_search_service_encryption_at_rest_disabled() + \
+               self.detect_elastic_search_node_to_node_encryption_disabled() + \
+               self.detect_elastic_search_dedicated_master_enabled()
 
     def _append_elastic_search_test_result(self, elastic_search, test_name, issue_status):
         return {
@@ -136,5 +139,47 @@ class Tester(interfaces.TesterInterface):
                 result.append(self._append_elastic_search_test_result(elastic_search, test_name, "issue_found"))
             else:
                 result.append(self._append_elastic_search_test_result(elastic_search, test_name, "no_issue_found"))
+        return result
+
+    def detect_elastic_search_service_encryption_at_rest_disabled(self):
+        test_name = "elastic_search_service_encryption_at_rest_disabled"
+        result = []
+        for elastic_search in self.elastic_search_domain_names['DomainNames']:
+            domain_description = self.aws_elastic_search_client.describe_elasticsearch_domain(
+                DomainName=elastic_search['DomainName'])
+            if 'DomainStatus' in domain_description and 'EncryptionAtRestOptions' in domain_description[
+                'DomainStatus'] and \
+                    domain_description['DomainStatus']['EncryptionAtRestOptions']['Enabled']:
+                result.append(self._append_elastic_search_test_result(elastic_search, test_name, "no_issue_found"))
+            else:
+                result.append(self._append_elastic_search_test_result(elastic_search, test_name, "issue_found"))
+        return result
+
+    def detect_elastic_search_node_to_node_encryption_disabled(self):
+        test_name = "elastic_search_node_to_node_encryption_disabled"
+        result = []
+        for elastic_search in self.elastic_search_domain_names['DomainNames']:
+            domain_description = self.aws_elastic_search_client.describe_elasticsearch_domain(
+                DomainName=elastic_search['DomainName'])
+            if 'DomainStatus' in domain_description and 'NodeToNodeEncryptionOptions' in domain_description[
+                'DomainStatus'] and domain_description['DomainStatus'][
+                'NodeToNodeEncryptionOptions']:
+                result.append(self._append_elastic_search_test_result(elastic_search, test_name, "no_issue_found"))
+            else:
+                result.append(self._append_elastic_search_test_result(elastic_search, test_name, "issue_found"))
+        return result
+
+    def detect_elastic_search_dedicated_master_enabled(self):
+        test_name = "elastic_search_dedicated_master_enabled"
+        result = []
+        for elastic_search in self.elastic_search_domain_names['DomainNames']:
+            domain_description = self.aws_elastic_search_client.describe_elasticsearch_domain(
+                DomainName=elastic_search['DomainName'])
+            if 'DomainStatus' in domain_description and 'ElasticsearchClusterConfig' in domain_description[
+                'DomainStatus'] and domain_description['DomainStatus'][
+                'ElasticsearchClusterConfig']['DedicatedMasterEnabled']:
+                result.append(self._append_elastic_search_test_result(elastic_search, test_name, "no_issue_found"))
+            else:
+                result.append(self._append_elastic_search_test_result(elastic_search, test_name, "issue_found"))
         return result
 
